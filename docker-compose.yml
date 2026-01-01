@@ -114,6 +114,17 @@ services:
       - bugbounty-network
     command: celery -A src.tasks beat --loglevel=info
 
+  # Vulnerable Web Application (for testing)
+  vulnerable-app:
+    build: ./vulnerable-app
+    container_name: bugbounty-vulnerable-app
+    ports:
+      - "5000:5000"
+    networks:
+      - bugbounty-network
+    volumes:
+      - ./vulnerable-app:/app
+
 networks:
   bugbounty-network:
     driver: bridge

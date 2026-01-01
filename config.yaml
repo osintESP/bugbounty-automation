@@ -11,6 +11,13 @@ database:
 
 # Targets configuration
 targets:
+  # Vulnerable test application (for testing the tool)
+  - domain: vulnerable-app:5000
+    scope:
+      - "vulnerable-app:5000"
+    exclude: []
+    enabled: true
+    
   - domain: example.com
     scope:
       - "*.example.com"
@@ -18,7 +25,7 @@ targets:
     exclude:
       - "internal.example.com"
       - "admin.example.com"
-    enabled: true
+    enabled: false
 
 # Reconnaissance tools
 recon:

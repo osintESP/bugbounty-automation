@@ -68,3 +68,8 @@ htmlcov/
 tmp/
 temp/
 *.tmp
+
+# Exceptions for vulnerable-app (needed for testing)
+!vulnerable-app/**/*.html
+!vulnerable-app/**/*.db
+!vulnerable-app/**/*.json

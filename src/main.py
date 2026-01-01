@@ -193,6 +193,78 @@ def list_targets():
 
 
 @cli.command()
+@click.option('--target', '-t', required=True, help='Target URL')
+@click.option('--auto', is_flag=True, help='Automatically exploit all found vulnerabilities')
+@click.option('--dry-run', is_flag=True, help='Show what would be exploited without executing')
+@click.option('--cve', help='Target specific CVE (e.g., CVE-2021-41773)')
+@click.option('--severity', '-s', multiple=True, default=['critical', 'high'], help='CVE severity filter')
+def exploit(target, auto, dry_run, cve, severity):
+    """Run automated exploitation pipeline: Recon → Detection → Exploitation"""
+    console.print(f"[bold magenta]🎯 Exploit Pipeline for {target}[/bold magenta]")
+    
+    if dry_run:
+        console.print("[yellow]⚠️  DRY RUN MODE - No actual exploits will be executed[/yellow]")
+    elif auto:
+        console.print("[red]⚠️  AUTO MODE - Will automatically exploit vulnerabilities[/red]")
+    
+    from modules.exploit.orchestrator import ExploitOrchestrator
+    import json
+    
+    # Create orchestrator
+    config = Config.get()
+    orchestrator = ExploitOrchestrator(target, config=config)
+    
+    # Run full pipeline
+    results = orchestrator.run_full_pipeline(auto_exploit=auto, dry_run=dry_run)
+    
+    # Display summary
+    console.print("\n" + "=" * 60)
+    console.print("[bold]📊 EXECUTIVE SUMMARY[/bold]")
+    console.print("=" * 60)
+    
+    summary = results.get('summary', {})
+    
+    # Create summary table
+    table = Table(show_header=False, box=None)
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="green")
+    
+    table.add_row("🎯 Target", summary.get('target', 'N/A'))
+    table.add_row("🔍 Technologies Detected", str(summary.get('technologies_detected', 0)))
+    table.add_row("📁 Paths Discovered", str(summary.get('paths_discovered', 0)))
+    table.add_row("🔓 CVEs Found", str(summary.get('cves_found', 0)))
+    table.add_row("💥 Exploitable CVEs", str(summary.get('exploitable_cves', 0)))
+    table.add_row("✅ Successful Exploits", str(summary.get('successful_exploits', 0)))
+    
+    risk_colors = {
+        'critical': 'red',
+        'high': 'orange1',
+        'medium': 'yellow',
+        'low': 'green'
+    }
+    risk_level = summary.get('risk_level', 'low')
+    table.add_row("⚠️  Risk Level", f"[{risk_colors.get(risk_level, 'white')}]{risk_level.upper()}[/{risk_colors.get(risk_level, 'white')}]")
+    
+    console.print(table)
+    
+    # Save results
+    output_dir = Path('./reports')
+    output_dir.mkdir(exist_ok=True)
+    
+    output_file = output_dir / f"exploit_{target.replace('://', '_').replace('/', '_')}.json"
+    with open(output_file, 'w') as f:
+        json.dump(results, f, indent=2)
+    
+    console.print(f"\n[green]✓ Full results saved to: {output_file}[/green]")
+    
+    # Show next steps
+    if not auto and not dry_run and summary.get('exploitable_cves', 0) > 0:
+        console.print("\n[yellow]💡 Next steps:[/yellow]")
+        console.print("  • Run with --dry-run to see what would be exploited")
+        console.print("  • Run with --auto to automatically exploit vulnerabilities")
+
+
+@cli.command()
 def version():
     """Show version information"""
     console.print("[bold]Bug Bounty Automation Tool[/bold]")

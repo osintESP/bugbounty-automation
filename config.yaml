@@ -1,0 +1,130 @@
+# Bug Bounty Automation Tool - Configuration
+
+# Database configuration
+database:
+  type: postgresql
+  host: localhost
+  port: 5432
+  name: bugbounty
+  user: bugbounty_user
+  password: ${DB_PASSWORD}  # Use environment variable
+
+# Targets configuration
+targets:
+  - domain: example.com
+    scope:
+      - "*.example.com"
+      - "example.com"
+    exclude:
+      - "internal.example.com"
+      - "admin.example.com"
+    enabled: true
+
+# Reconnaissance tools
+recon:
+  subdomain_enum:
+    enabled: true
+    tools:
+      - subfinder
+      - amass
+      - assetfinder
+    timeout: 300  # seconds
+    
+  port_scan:
+    enabled: true
+    tool: nmap
+    ports: "1-65535"
+    top_ports: 1000
+    scan_type: "-sV -sC"  # Service version detection + default scripts
+    timeout: 600
+    
+  tech_detect:
+    enabled: true
+    tools:
+      - whatweb
+      - wappalyzer
+    
+  crawler:
+    enabled: true
+    tools:
+      - gospider
+      - hakrawler
+      - katana
+    depth: 3
+    max_urls: 1000
+
+# Scanning tools
+scan:
+  nuclei:
+    enabled: true
+    templates_path: "/nuclei-templates"
+    severity:
+      - critical
+      - high
+      - medium
+    rate_limit: 150  # requests per second
+    
+  headers:
+    enabled: true
+    check:
+      - strict-transport-security
+      - content-security-policy
+      - x-frame-options
+      - x-content-type-options
+      - x-xss-protection
+      
+  secrets:
+    enabled: true
+    tools:
+      - trufflehog
+      - gitleaks
+    patterns:
+      - api_keys
+      - passwords
+      - tokens
+      - credentials
+
+# Reporting configuration
+reporting:
+  formats:
+    - json
+    - html
+    - markdown
+  output_dir: "./reports"
+  include_screenshots: true
+  severity_threshold: "medium"  # Only report medium and above
+  
+# Scheduling
+scheduler:
+  enabled: false
+  interval: "24h"  # Run every 24 hours
+  targets: "all"   # or specific domains
+  
+# Notifications
+notifications:
+  enabled: false
+  channels:
+    slack:
+      enabled: false
+      webhook_url: ${SLACK_WEBHOOK}
+    email:
+      enabled: false
+      smtp_server: smtp.gmail.com
+      smtp_port: 587
+      from: ${EMAIL_FROM}
+      to: ${EMAIL_TO}
+      
+# Rate limiting and safety
+safety:
+  rate_limit: 100  # requests per second (global)
+  respect_robots_txt: true
+  user_agent: "BugBountyTool/1.0 (Security Research)"
+  max_concurrent_scans: 5
+  
+# Logging
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  file: "./logs/bugbounty.log"
+  max_size: "100MB"
+  backup_count: 5
+  format: "json"  # json or text
